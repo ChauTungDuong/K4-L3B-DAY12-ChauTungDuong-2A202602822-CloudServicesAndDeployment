@@ -16,7 +16,7 @@ Trong `Settings`, `agent_api_key` không có giá trị mặc định nên app c
 khi khởi động nếu thiếu biến môi trường. Hãy mô tả một tình huống cụ thể mà
 việc "chết sớm" này cứu bạn, so với việc để mặc định `"changeme"`.
 
-> Tình huống: Khi deploy service lên Render lần đầu, tôi quên không set biến môi trường `AGENT_API_KEY` trong dashboard. Nhờ `agent_api_key` không có giá trị mặc định, container khởi động xong thì crash ngay với lỗi `ValidationError: 1 validation error for Settings - agent_api_key: Field required`. Tôi thấy ngay trong build log và fix được trong vòng 1 phút. Nếu để mặc định `"changeme"`, service vẫn khởi động bình thường — log xanh hoàn toàn — nhưng bất kỳ ai biết thử key `"changeme"` đều gọi được `/ask` và tiêu ngân sách LLM của tôi mà tôi không hay biết, cho đến khi nhận hóa đơn cuối tháng.
+> Tình huống: Khi deploy service lên Railway, tôi có thể quên set biến môi trường `AGENT_API_KEY` trong Variables. Nhờ `agent_api_key` không có giá trị mặc định, container sẽ crash ngay với lỗi `ValidationError: 1 validation error for Settings - agent_api_key: Field required`, để tôi thấy ngay trong Deployment Logs và sửa trước khi service nhận traffic. Nếu để mặc định `"changeme"`, service vẫn khởi động bình thường nhưng bất kỳ ai biết thử key `"changeme"` đều gọi được `/ask` và tiêu ngân sách của tôi.
 
 ---
 
@@ -27,7 +27,7 @@ nêu **hai** việc bạn làm được với dòng log đó mà `print("đã tr
 không làm được.
 
 > Dòng log JSON thu được khi chạy service cục bộ và gọi /ask:
-> `{"event": "ask_completed", "level": "info", "timestamp": "2026-09-29T03:22:14.581042+00:00", "user_id": "sv01", "tokens_in": 15, "tokens_out": 32, "cost_usd": 0.0001}`
+> `{"event": "ask_completed", "level": "info", "timestamp": "2026-09-29T12:18:00.263684+07:00", "user_id": "sv01", "tokens_in": 15, "tokens_out": 32, "cost_usd": 0.0001}`
 >
 > Hai việc log JSON làm được mà `print("đã trả lời xong")` không làm được:
 > 1. **Lọc và truy vấn tự động**: Hệ thống thu thập log (Datadog, CloudWatch, Render Logs) có thể parse JSON và lọc theo field cụ thể — ví dụ `jq '.[] | select(.cost_usd > 0.01)'` để tìm các request đắt tiền bất thường, hoặc vẽ biểu đồ tổng chi phí theo `user_id` theo thời gian thực.
@@ -147,8 +147,8 @@ Ghi lại **một** lỗi bạn gặp khi deploy lên cloud (build fail, health 
 timeout, sai REDIS_URL, app không đọc `$PORT`...): thông báo lỗi là gì, bạn
 tìm ra nguyên nhân bằng cách nào, và sửa ra sao?
 
-> **Lỗi gặp phải**: Khi deploy lên Render lần đầu, service build Docker thành công nhưng health check timeout — Render báo "Health check failed: Service did not respond to health check at /health within 60s".
+> **Lỗi gặp phải**: Lần đầu kiểm tra bằng PowerShell, tôi đặt `$URL` thiếu tiền tố `https://`. Lệnh `Invoke-WebRequest -Method POST "$URL/ask"` nhận `405 Method Not Allowed`, nên chưa chứng minh được authentication.
 >
-> **Tìm nguyên nhân**: Xem tab "Logs" trên Render dashboard thấy lỗi `ValidationError: 1 validation error for Settings / agent_api_key / Field required`. App crash ngay khi khởi động vì chưa set `AGENT_API_KEY` trong Render Environment Variables — đây chính là "fail fast" đang hoạt động đúng.
+> **Tìm nguyên nhân**: Tôi đối chiếu với route `@app.post("/ask")`, sau đó kiểm tra trực tiếp URL HTTPS. Kết quả `/health` trả 200, `/ready` trả 200 với `redis: true`, và `POST /ask` không có key trả 401. Vì vậy lỗi nằm ở cách gọi URL/PowerShell, không nằm ở route được deploy.
 >
-> **Cách sửa**: Vào Render Dashboard → Service `day12-agent` → Environment → Add `AGENT_API_KEY` với giá trị key cá nhân → Manual Deploy. Lần này log hiện `service_started` và `/health` trả 200 bình thường. Bài học: luôn kiểm tra Logs ngay sau deploy, không chỉ nhìn vào trạng thái build.
+> **Cách sửa**: Dùng đầy đủ `https://k4-l3b-day12-chau-tung-duong-2a202602822-cloud-s-production.up.railway.app` và `-UseBasicParsing` trong PowerShell. Sau đó request không có `X-API-Key` nhận `401 {"detail":"invalid or missing API key"}` đúng yêu cầu.

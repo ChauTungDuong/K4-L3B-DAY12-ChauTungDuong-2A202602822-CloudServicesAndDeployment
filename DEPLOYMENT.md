@@ -18,7 +18,7 @@
 
 | Mục | Nội dung |
 |-----|----------|
-| Public URL | https://CHUA-DEPLOY-DIEN-SAU-KHI-DEPLOY.up.railway.app |
+| Public URL | https://k4-l3b-day12-chau-tung-duong-2a202602822-cloud-s-production.up.railway.app |
 | Platform | Railway |
 | Ngày deploy | 2026-09-29 |
 
@@ -37,22 +37,26 @@ Ghi tên biến và **nguồn giá trị**, không ghi giá trị:
 
 ## Lệnh Kiểm Tra
 
-Thay `<URL>` bằng Public URL ở trên:
+Public URL đã dùng trong các lệnh dưới đây:
+
+```bash
+URL=https://k4-l3b-day12-chau-tung-duong-2a202602822-cloud-s-production.up.railway.app
+```
 
 ```bash
 # 1. Liveness — mong đợi 200 {"status":"ok"}
-curl -i <URL>/health
+curl -i "$URL/health"
 
 # 2. Readiness — mong đợi 200 {"status":"ready"} (đã nối được Redis)
-curl -i <URL>/ready
+curl -i "$URL/ready"
 
 # 3. Không có API key — mong đợi 401
-curl -i -X POST <URL>/ask \
+curl -i -X POST "$URL/ask" \
   -H "Content-Type: application/json" \
   -d '{"question":"Hello"}'
 
 # 4. Có API key — mong đợi 200 kèm câu trả lời
-curl -i -X POST <URL>/ask \
+curl -i -X POST "$URL/ask" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: $AGENT_API_KEY" \
   -H "X-User-Id: sv-test" \
@@ -60,7 +64,7 @@ curl -i -X POST <URL>/ask \
 
 # 5. Rate limit — gọi 15 lần, những lần cuối phải trả 429
 for i in $(seq 1 15); do
-  curl -s -o /dev/null -w "%{http_code} " -X POST <URL>/ask \
+  curl -s -o /dev/null -w "%{http_code} " -X POST "$URL/ask" \
     -H "Content-Type: application/json" \
     -H "X-API-Key: $AGENT_API_KEY" \
     -H "X-User-Id: sv-test" \
@@ -70,16 +74,38 @@ done; echo
 
 ## Kết Quả Chạy Thật
 
-Dán output của các lệnh trên vào đây sau khi deploy:
+Kiểm tra ngày 2026-09-29 qua HTTPS:
 
-```
-(bổ sung sau khi deploy cloud - xem hướng dẫn bên dưới)
+```text
+$ curl -i "$URL/health"
+HTTP/1.1 200 OK
+Content-Type: application/json
+Server: railway-hikari
+
+{"status":"ok","service":"day12-agent","version":"1.0.0"}
+
+$ curl -i "$URL/ready"
+HTTP/1.1 200 OK
+Content-Type: application/json
+Server: railway-hikari
+
+{"status":"ready","redis":true}
+
+$ curl -i -X POST "$URL/ask" -H "Content-Type: application/json" \
+  -d '{"question":"Hello"}'
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+Server: railway-hikari
+
+{"detail":"invalid or missing API key"}
 ```
 
 ## Ảnh Chụp Màn Hình
 
 Đặt ảnh trong thư mục `screenshots/`:
 
-- `screenshots/dashboard.png` — trang quản lý service trên platform
-- `screenshots/health.png` — kết quả gọi `/health` từ trình duyệt hoặc curl
+- `screenshots/dashboard.png` — trang Railway của service, thấy tên service,
+  trạng thái deploy thành công và domain công khai.
+- `screenshots/health.png` — terminal hoặc trình duyệt hiển thị request HTTPS
+  tới `/health`, HTTP 200 và JSON `status: ok`.
 
