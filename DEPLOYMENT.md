@@ -18,7 +18,7 @@
 
 | Mục | Nội dung |
 |-----|----------|
-| Public URL | https://CHUA-DEPLOY-YEU-CAU-BO-SUNG-BY-STUDENT.up.railway.app |
+| Public URL | https://CHUA-DEPLOY-DIEN-SAU-KHI-DEPLOY.up.railway.app |
 | Platform | Railway |
 | Ngày deploy | 2026-09-29 |
 
@@ -30,7 +30,7 @@ Ghi tên biến và **nguồn giá trị**, không ghi giá trị:
 |------|--------|---------|
 | `PORT` | ✅ | platform tự gán |
 | `AGENT_API_KEY` | ✅ | đặt trong dashboard, không nằm trong repo |
-| `REDIS_URL` | ✅ | Redis add-on của Railway |
+| `REDIS_URL` | ✅ | Redis add-on của Railway (tự nối qua Add Reference) |
 | `RATE_LIMIT_PER_MINUTE` | ✅ | 10 |
 | `MONTHLY_BUDGET_USD` | ✅ | 10.0 |
 | `LOG_LEVEL` | ✅ | INFO |
